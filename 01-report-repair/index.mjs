@@ -6,32 +6,19 @@ const sumSet = (set) => set.reduce((sum, val) => sum + val, 0);
 const timesSet = (set) => set.reduce((prod, val) => prod * val, 1);
 const doesSetMatch = (sum, sumToFind) => sum === sumToFind;
 const isMatchImpossible = (sum, sumToFind) => sum > sumToFind;
+const resolveBreak = (result) => result !== BREAK && result;
 
-const doMatch = (results, sumToFind) => {
-    const sum = sumSet(results);
-    if (doesSetMatch(sum, sumToFind)) {
-        return results;
-    }
+const doMatch = (sum, results, sumToFind) => doesSetMatch(sum, sumToFind)
+    ? results
+    : isMatchImpossible(sum, sumToFind) && BREAK;
 
-    return isMatchImpossible(sum, sumToFind) && BREAK;
-}
-
-const findSumFromLists = (lists, sumToFind, results = []) => {
-    if (!lists.length) {
-        return doMatch(results, sumToFind);
-    }
-
-    const result = lists[0].reduce(
-        (acc, val) => acc || findSumFromLists(
-            lists.slice(1) || [],
-            sumToFind,
-            [...results, val]
-        ),
-        false
-    );
-
-    return result === BREAK ? false : result;
-};
+const findSumFromLists = ([head, ...tail] = [], sumToFind, results = []) =>
+    !head
+        ? doMatch(sumSet(results), results, sumToFind)
+        : resolveBreak(head.reduce(
+            (acc, val) => acc || findSumFromLists(tail, sumToFind, [...results, val]),
+            false
+        ));
 
 export const findSum = (inputList, numberOfItems, sumToFind = 2020) => {
     const sortedList = inputList.sort((a, b) => a >= b ? 1 : -1);
@@ -40,10 +27,8 @@ export const findSum = (inputList, numberOfItems, sumToFind = 2020) => {
 
     const lists = [
         reversedList,
-        ...(
-            Array.from({ length: numberOfItems - 1 })
-                .map(() => [ ...slicedList ])
-        )
+        ...Array.from({ length: numberOfItems - 1 })
+            .map(() => [ ...slicedList ])
     ];
 
     return findSumFromLists(lists, sumToFind);

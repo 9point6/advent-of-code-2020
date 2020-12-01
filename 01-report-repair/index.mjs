@@ -1,71 +1,53 @@
 import { readFile } from 'fs/promises';
 
-const findSumPairs = (list, sumToFind = 2020) => {
-    const sortedList = list.sort((a, b) => a >= b ? 1 : -1);
+const sumSet = (set) => set.reduce((sum, val) => sum + val, 0);
+const timesSet = (set) => set.reduce((prod, val) => prod * val, 1);
+const doesSetMatch = (sum, sumToFind) => sum === sumToFind;
+const isMatchPossible = (sum, sumToFind) => sum <= sumToFind;
+
+const findSumFromLists = (lists, sumToFind, results = []) => {
+    if (!lists.length) {
+        const sum = sumSet(results);
+        return doesSetMatch(sum, sumToFind)
+            ? results
+            : isMatchPossible(sum, sumToFind)
+                ? false
+                : -1;
+    }
+
+    const remainder = lists.slice(1) || [];
+    const result = lists[0].reduce(((acc, val) =>
+        acc || (acc === -1 ? -1 : findSumFromLists(remainder, sumToFind, [...results, val]))
+    ), false);
+
+    return result === -1 ? false : result;
+};
+
+const findSum = (inputList, numberOfItems = 2, sumToFind = 2020) => {
+    const sortedList = inputList.sort((a, b) => a >= b ? 1 : -1);
     const slicedList = sortedList.slice(0, sortedList.find((val) => val >= (sumToFind - sortedList[0])));
     const reversedList = [...slicedList].reverse();
 
-    for (let i = 0; i < reversedList.length; i++) {
-        for (let j = 0; j < slicedList.length; j++) {
-            const val = reversedList[i] + slicedList[j];
-            if (val === sumToFind) {
-                return [reversedList[i], slicedList[j]];
-            }
+    const lists = [
+        reversedList,
+        ...(
+            Array.from({ length: numberOfItems - 1 })
+                .map(() => [ ...slicedList ])
+        )
+    ];
 
-            if (val > sumToFind) {
-                break;
-            }
-        }
-    }
-}
-
-const findSumTriples = (list, sumToFind = 2020) => {
-    const sortedList = list.sort((a, b) => a >= b ? 1 : -1);
-    const slicedList = sortedList.slice(0, sortedList.find((val) => val >= (sumToFind - sortedList[0])));
-    const reversedList = [...slicedList].reverse();
-
-    for (let i = 0; i < reversedList.length; i++) {
-        for (let j = 0; j < slicedList.length; j++) {
-            for (let k = 0; k < slicedList.length; k++) {
-                const val = reversedList[i] + slicedList[j] + slicedList[k];
-                if (val === sumToFind) {
-                    return [reversedList[i], slicedList[j], slicedList[k]];
-                }
-
-                if (val > sumToFind) {
-                    break;
-                }
-            }
-        }
-    }
-}
-
-const partOne = async ({
-    inputPath = './input.txt'
-} = {}) => {
-    const input = await readFile(inputPath, 'utf8');
-    const list = input.split('\n').map(Number);
-
-    const output = findSumPairs(list);
-    console.log(output[0] * output[1]);
+    return findSumFromLists(lists, sumToFind);
 };
 
-const partTwo = async ({
-    inputPath = './input.txt'
-} = {}) => {
+const findSumMultiple = async (numberOfItems, inputPath) => {
     const input = await readFile(inputPath, 'utf8');
     const list = input.split('\n').map(Number);
+    return timesSet(findSum(list, numberOfItems));
+}
 
-    const output = findSumTriples(list);
-    console.log(output[0] * output[1] * output[2]);
-};
-
-const main = async () => {
-    console.log('Part One:');
-    await partOne();
-
-    console.log('Part Two:');
-    await partTwo();
+export const main = async (inputPath = './input.txt') => {
+    console.log(`Part One: ${await findSumMultiple(2, inputPath)}`);
+    console.log(`Part Two: ${await findSumMultiple(3, inputPath)}`);
 }
 
 main();

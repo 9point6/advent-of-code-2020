@@ -5,16 +5,15 @@ const BREAK = Symbol('break');
 const sumSet = (set) => set.reduce((sum, val) => sum + val, 0);
 const timesSet = (set) => set.reduce((prod, val) => prod * val, 1);
 const doesSetMatch = (sum, sumToFind) => sum === sumToFind;
-const isMatchPossible = (sum, sumToFind) => sum <= sumToFind;
-const breakReducer = (fn) => (acc, val) => acc || (acc === BREAK ? BREAK : fn(val));
+const isMatchImpossible = (sum, sumToFind) => sum > sumToFind;
 
 const doMatch = (results, sumToFind) => {
     const sum = sumSet(results);
-    return doesSetMatch(sum, sumToFind)
-        ? results
-        : isMatchPossible(sum, sumToFind)
-            ? false
-            : BREAK;
+    if (doesSetMatch(sum, sumToFind)) {
+        return results;
+    }
+
+    return isMatchImpossible(sum, sumToFind) && BREAK;
 }
 
 const findSumFromLists = (lists, sumToFind, results = []) => {
@@ -23,12 +22,10 @@ const findSumFromLists = (lists, sumToFind, results = []) => {
     }
 
     const result = lists[0].reduce(
-        breakReducer((val) =>
-            findSumFromLists(
-                lists.slice(1) || [],
-                sumToFind,
-                [...results, val]
-            )
+        (acc, val) => acc || findSumFromLists(
+            lists.slice(1) || [],
+            sumToFind,
+            [...results, val]
         ),
         false
     );

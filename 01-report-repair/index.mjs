@@ -63,5 +63,4 @@ export const main = async (inputPath = './input.txt') => {
     console.log(`Part Two: ${await findSumMultiple(3, inputPath)}`);
 }
 
-console.log(require);
 main();

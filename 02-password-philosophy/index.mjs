@@ -2,7 +2,7 @@ import { readFile } from 'fs/promises';
 
 const decodePolicy = (policyString) => {
     const [range, char] = policyString.split(' ');
-    const [min, max] = range.split('-');
+    const [min, max] = range.split('-').map(Number);
     return { char, min, max };
 };
 
@@ -14,26 +14,32 @@ const decodeLine = (line) => {
     }
 };
 
-const testPolicy = ({ password, policy }) => {
-    if (!password) {
-        return false;
-    }
+const isBetween = (min, max, val) => max >= val && val >= min
 
-    const count = password.split('')
-        .reduce((acc, char) => acc + (char === policy.char ? 1 : 0), 0);
+export const testPolicy1 = ({ password, policy }) =>
+    password && isBetween(
+        policy.min,
+        policy.max,
+        password.split('')
+            .reduce((acc, char) => acc + (char === policy.char ? 1 : 0), 0),
+    );
 
-    return policy.max >= count && count >= policy.min;
-};
+export const testPolicy2 = ({ password, policy: { min, max, char } }) =>
+    password
+        && (password.charAt(min - 1) === char)
+            !== (password.charAt(max - 1) === char);
 
-export const validPasswords = async (inputPath) => {
-    const input = await readFile(inputPath, 'utf8');
-    const list = input.split('\n').map(decodeLine);
-    return list.map(testPolicy)
+export const validPasswords = async (inputPath, policyFunc) =>
+    (await readFile(inputPath, 'utf8'))
+        .split('\n')
+        .map(decodeLine)
+        .map(policyFunc)
         .reduce((acc, item) => acc + (!!item ? 1 : 0), 0);
-}
+
 
 export const main = async (inputPath = './input.txt') => {
-    console.log(`Valid Passwords: ${await validPasswords(inputPath)}`);
+    console.log(`Valid Passwords (policy 1): ${await validPasswords(inputPath, testPolicy1)}`);
+    console.log(`Valid Passwords (policy 2): ${await validPasswords(inputPath, testPolicy2)}`);
 }
 
 main();

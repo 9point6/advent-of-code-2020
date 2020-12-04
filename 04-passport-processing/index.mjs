@@ -1,4 +1,5 @@
 import { readFile } from 'fs/promises';
+import esMain from '../00-helpers/es-main.mjs';
 
 const VALID_EYE_COLOURS = ['amb', 'blu', 'brn', 'gry', 'grn', 'hzl', 'oth'];
 const REQUIRED_FIELDS = {
@@ -14,7 +15,6 @@ const REQUIRED_FIELDS = {
     hcl: (val) => /^#[a-f0-9]{6}$/.test(val),
     ecl: (val) => VALID_EYE_COLOURS.includes(val),
     pid: (val) => /^[0-9]{9}$/.test(val)
-    // cid: (val) => true,
 }
 
 const parsePassport = (passportString) => passportString
@@ -24,24 +24,35 @@ const parsePassport = (passportString) => passportString
     .map((pair) => pair.split(':'))
     .reduce((acc, [key, val]) => ({ ...acc, [key]: val }), {})
 
-const parsePassports = (file) => file.split('\n\n').map(parsePassport);
+const validatePassportHasFields = (passport) => Object.entries(REQUIRED_FIELDS)
+    .reduce((acc, [field, validator]) => acc && !!passport[field], true);
 
-const validatePassports = (passports) => passports
-    .map((passport) => ({
-        ...passport,
-        valid: Object.entries(REQUIRED_FIELDS)
-            .reduce((acc, [field, validator]) =>
-                acc && validator(passport[field]), true)
-    }));
+const validatePassport = (passport) => Object.entries(REQUIRED_FIELDS)
+    .reduce((acc, [field, validator]) => acc && validator(passport[field]), true);
 
 const countValid = (validatedPassports) => validatedPassports
-    .reduce((acc, { valid }) => acc + Number(valid), 0)
+    .reduce((acc, { valid }) => acc + Number(valid), 0);
+
+const countHasFields = (validatedPassports) => validatedPassports
+    .reduce((acc, { hasFields }) => acc + Number(hasFields), 0);
+
+export const parsePassports = (file) => file.split('\n\n').map(parsePassport);
+
+export const validatePassports = (passports) => passports
+    .map((passport) => ({
+        ...passport,
+        hasFields: validatePassportHasFields(passport),
+        valid: validatePassport(passport)
+    }));
 
 export const main = async (inputPath = './input.txt') => {
     const passports = parsePassports(await readFile(inputPath, 'utf8'));
     const validatedPassports = validatePassports(passports);
 
-    console.log('Valid Passports:', countValid(validatedPassports));
+    console.log('Valid Passports (part 1):', countHasFields(validatedPassports));
+    console.log('Valid Passports {part 2}:', countValid(validatedPassports));
 }
 
-main();
+if (esMain(import.meta)) {
+    main(process.env.INPUT_PATH || './input.txt');
+}

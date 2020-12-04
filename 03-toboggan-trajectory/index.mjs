@@ -1,4 +1,5 @@
 import { readFile } from 'fs/promises';
+import esMain from '../00-helpers/es-main.mjs';
 
 const SLOPES = [
     { x: 1, y: 1 },
@@ -41,4 +42,6 @@ export const main = async (inputPath = './input.txt') => {
     console.log('Product:', product);
 }
 
-main();
+if (esMain(import.meta)) {
+    main(process.env.INPUT_PATH || './input.txt');
+}

@@ -1,4 +1,5 @@
 import { readFile } from 'fs/promises';
+import esMain from '../00-helpers/es-main.mjs';
 
 const decodePolicy = (policyString) => {
     const [range, char] = policyString.split(' ');
@@ -42,4 +43,6 @@ export const main = async (inputPath = './input.txt') => {
     console.log(`Valid Passwords (policy 2): ${await validPasswords(inputPath, testPolicy2)}`);
 }
 
-main();
+if (esMain(import.meta)) {
+    main(process.env.INPUT_PATH || './input.txt');
+}

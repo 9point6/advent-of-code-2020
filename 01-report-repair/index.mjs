@@ -1,4 +1,5 @@
 import { readFile } from 'fs/promises';
+import esMain from '../00-helpers/es-main.mjs';
 
 const BREAK = Symbol('break');
 
@@ -45,4 +46,6 @@ export const main = async (inputPath = './input.txt') => {
     console.log(`Part Two: ${await findSumMultiple(3, inputPath)}`);
 }
 
-main();
+if (esMain(import.meta)) {
+    main(process.env.INPUT_PATH || './input.txt');
+}

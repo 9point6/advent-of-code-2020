@@ -39,8 +39,8 @@ export const validPasswords = async (inputPath, policyFunc) =>
 
 
 export const main = async (inputPath = './input.txt') => {
-    console.log(`Valid Passwords (policy 1): ${await validPasswords(inputPath, testPolicy1)}`);
-    console.log(`Valid Passwords (policy 2): ${await validPasswords(inputPath, testPolicy2)}`);
+    console.log('Valid Passwords (policy 1):', await validPasswords(inputPath, testPolicy1));
+    console.log('Valid Passwords (policy 2):', await validPasswords(inputPath, testPolicy2));
 }
 
 if (esMain(import.meta)) {

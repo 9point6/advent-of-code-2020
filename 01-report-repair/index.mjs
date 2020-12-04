@@ -42,8 +42,8 @@ export const findSumMultiple = async (numberOfItems, inputPath) => {
 }
 
 export const main = async (inputPath = './input.txt') => {
-    console.log(`Part One: ${await findSumMultiple(2, inputPath)}`);
-    console.log(`Part Two: ${await findSumMultiple(3, inputPath)}`);
+    console.log('Part One:', await findSumMultiple(2, inputPath));
+    console.log('Part Two:', await findSumMultiple(3, inputPath));
 }
 
 if (esMain(import.meta)) {

@@ -50,7 +50,7 @@ export const main = async (inputPath = './input.txt') => {
     const validatedPassports = validatePassports(passports);
 
     console.log('Valid Passports (part 1):', countHasFields(validatedPassports));
-    console.log('Valid Passports {part 2}:', countValid(validatedPassports));
+    console.log('Valid Passports (part 2):', countValid(validatedPassports));
 }
 
 if (esMain(import.meta)) {

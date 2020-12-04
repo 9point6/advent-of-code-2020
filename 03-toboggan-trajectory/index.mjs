@@ -34,7 +34,7 @@ export const main = async (inputPath = './input.txt') => {
     const product = SLOPES
         .map((slope) => {
             const result = treesHit(map, slope);
-            console.log(`Hit trees (+${slope.x}, +${slope.y}): ${result}`);
+            console.log(`Hit trees (+${slope.x}, +${slope.y}):`, result);
             return result
         })
         .reduce((acc, val) => acc * val, 1);

@@ -1,4 +1,3 @@
-import { readFileSync } from 'fs';
 import { readFile } from 'fs/promises';
 import esMain from '../00-helpers/es-main.mjs';
 
@@ -15,17 +14,14 @@ const parseBoardingPass = (pass) => {
     };
 }
 
-const parseBoardingPasses = (file) => file.split('\n').map(parseBoardingPass);
-
+const parseBoardingPasses = (file) => file.split('\n').map(parseBoardingPass).sort((a, b) => a.id - b.id);
 const findHighestIdPass = (passes) => passes.reduce((acc, item) => acc.id >= item.id ? acc : item, { id: 0 });
+const findMissingSeatId = (passes) => passes.find((pass, i) => i > 0 && pass.id - passes[i - 1].id > 1).id - 1;
 
 export const main = async (inputPath = './input.txt') => {
     const boardingPasses = parseBoardingPasses(await readFile(inputPath, 'utf8'));
-    const highestIDPass = findHighestIdPass(boardingPasses)
-
-    // boardingPasses.map((item) => console.log('   ', item))
-
-    console.log('Highest ID Boarding Pass:', highestIDPass);
+    console.log('Highest ID Boarding Pass:', findHighestIdPass(boardingPasses));
+    console.log('Your seat ID:', findMissingSeatId(boardingPasses));
 }
 
 if (esMain(import.meta)) {

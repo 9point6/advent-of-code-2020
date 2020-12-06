@@ -18,8 +18,13 @@ export const main = async () =>
         .reduce(async (last, dir) => {
             await last;
             console.log(`\n*** ${friendlyName(dir)}:`);
+            console.time('*** imported in');
             const solution = await import(`./${dir}/index.mjs`);
-            return solution.main(join(__dirname, `./${dir}/input.txt`))
+            console.timeEnd('*** imported in');
+            console.time('*** executed in');
+            await solution.main(join(__dirname, `./${dir}/input.txt`));
+            console.timeEnd('*** executed in');
+
         });
 
 if (esMain(import.meta)) {

@@ -11,6 +11,14 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const prepLog = (message, appendSuffix = true) => `${LOG_PREFIX}${message}${appendSuffix ? LOG_SUFFIX : ''}`;
 
+const timeLog = async (timeLogString, func) => {
+    console.time(prepLog(`  ${timeLogString}`, false));
+    const ret = await func();
+    console.timeEnd(prepLog(`  ${timeLogString}`, false));
+    console.log(LOG_SUFFIX);
+    return ret;
+}
+
 const friendlyName = (dir) => dir.split('-')
     .map((item, i) => i === 0
         ? `${Number(item)}.`
@@ -23,15 +31,10 @@ export const main = async () =>
         .reduce(async (last, dir) => {
             await last;
             console.log(prepLog(`${friendlyName(dir)}:`));
-            console.time(prepLog('  imported in', false));
-            const solution = await import(`./${dir}/index.mjs`);
-            console.timeEnd(prepLog('  imported in', false));
-            console.log(LOG_SUFFIX);
-            console.time(prepLog('  executed in', false));
-            await solution.main(join(__dirname, `./${dir}/input.txt`));
-            console.log('');
-            console.timeEnd(prepLog('  executed in', false));
-            console.log(LOG_SUFFIX);
+            const solution = await timeLog('imported in', 
+                async () => import(`./${dir}/index.mjs`));
+            await timeLog('executed in', 
+                async () => solution.main(join(__dirname, `./${dir}/input.txt`)));
 
         });
 

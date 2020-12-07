@@ -4,7 +4,7 @@ import esMain from '../00-helpers/es-main.mjs';
 const bagNameSanitiser = (bagName) => bagName.replace(/ bags?$/, '');
 const parseBaggingRule = (rules, rule) => {
     const [bag, containsString] = rule.split(' contain ');
-    if (!containsString) {
+    if (!containsString || containsString === 'no other bags.') {
         return rules;
     }
 
@@ -47,12 +47,29 @@ const findBagContainers = (reverseMap, bagToContain) =>
                 { ...reverseMap[bagToContain] }
             );
 
+const findBagContents = (rules, container) =>
+    !rules[container]
+        ? {}
+        : Object.entries(rules[container])
+            .reduce(
+                (acc, [contents, count]) =>
+                    Object.entries(findBagContents(rules, contents))
+                        .reduce((acc, [key, insideCount]) => ({
+                            ...acc,
+                            [key]: (acc[key] || 0) + (insideCount * count)
+                        }), acc),
+                { ...rules[container] }
+            );
+
+const sumContents = (bagContents) => Object.values(bagContents).reduce((acc, next) => acc + next, 0);
 
 export const main = async (inputPath = './input.txt') => {
     const rules = parseBaggingRules(await readFile(inputPath, 'utf8'));
     const reverseMap = buildReverseRuleMap(rules);
     const shinyGoldContainers = findBagContainers(reverseMap, 'shiny gold');
-    console.log('Shiny Gold bag can be contained by:', Object.keys(shinyGoldContainers).length);
+    const shinyGoldContents = findBagContents(rules, 'shiny gold');
+    console.log('Shiny Gold bag can be contained by:', Object.values(shinyGoldContainers).length);
+    console.log('Shiny Gold bag contains:', sumContents(shinyGoldContents));
 }
 
 if (esMain(import.meta)) {

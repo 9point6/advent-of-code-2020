@@ -2,26 +2,25 @@ import { readFile } from 'fs/promises';
 import esMain from '../00-helpers/es-main.mjs';
 
 const bagNameSanitiser = (bagName) => bagName.replace(/ bags?$/, '');
-const parseBaggingRule = (rules, rule) => {
-    const [bag, containsString] = rule.split(' contain ');
-    if (!containsString || containsString === 'no other bags.') {
-        return rules;
-    }
+const parseBaggingRule = (rules, [bag, containsString]) =>
+    (!containsString || containsString === 'no other bags.')
+        ? rules
+        : {
+            ...rules,
+            [bagNameSanitiser(bag)]: Object.fromEntries(
+                containsString
+                    .slice(0, -1)
+                    .split(', ')
+                    .map((bagString) => bagString.split(' '))
+                    .map(([quantity, ...bagName]) =>
+                        [bagNameSanitiser(bagName.join(' ')), Number(quantity)])
+            )
+        };
 
-    return {
-        ...rules,
-        [bagNameSanitiser(bag)]: Object.fromEntries(
-            containsString
-                .slice(0, -1)
-                .split(', ')
-                .map((bagString) => {
-                    const [quantity, ...bagName] = bagString.split(' ');
-                    return [bagNameSanitiser(bagName.join(' ')), Number(quantity)];
-                })
-        )
-    };
-};
-const parseBaggingRules = (file) => file.split('\n').reduce(parseBaggingRule, {});
+const parseBaggingRules = (file) => file.split('\n')
+    .map((rule) => rule.split(' contain '))
+    .reduce(parseBaggingRule, {});
+
 const buildReverseRuleMap = (rules) => Object.entries(rules)
     .reduce((reverseRules, [bag, contains]) => Object.entries(contains)
         .reduce((acc, [containBag, count]) => ({
@@ -32,20 +31,6 @@ const buildReverseRuleMap = (rules) => Object.entries(rules)
             }
         }), reverseRules),
     {});
-
-// const findBagContainers = (reverseMap, bagToContain) => reverseMap[bagToContain];
-
-const findBagContainers = (reverseMap, bagToContain) =>
-    !reverseMap[bagToContain]
-        ? {}
-        : Object.keys(reverseMap[bagToContain])
-            .reduce(
-                (acc, container) => ({
-                    ...acc,
-                    ...findBagContainers(reverseMap, container)
-                }),
-                { ...reverseMap[bagToContain] }
-            );
 
 const findBagContents = (rules, container) =>
     !rules[container]
@@ -61,12 +46,13 @@ const findBagContents = (rules, container) =>
                 { ...rules[container] }
             );
 
-const sumContents = (bagContents) => Object.values(bagContents).reduce((acc, next) => acc + next, 0);
+const sumContents = (bagContents) => Object.values(bagContents)
+    .reduce((acc, next) => acc + next, 0);
 
 export const main = async (inputPath = './input.txt') => {
     const rules = parseBaggingRules(await readFile(inputPath, 'utf8'));
     const reverseMap = buildReverseRuleMap(rules);
-    const shinyGoldContainers = findBagContainers(reverseMap, 'shiny gold');
+    const shinyGoldContainers = findBagContents(reverseMap, 'shiny gold');
     const shinyGoldContents = findBagContents(rules, 'shiny gold');
     console.log('Shiny Gold bag can be contained by:', Object.values(shinyGoldContainers).length);
     console.log('Shiny Gold bag contains:', sumContents(shinyGoldContents));

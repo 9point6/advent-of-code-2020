@@ -17,14 +17,11 @@ const applyInstruction = ([instruction, param], { halt, accumulator, pointer, vi
 const executeBootloader = (instructions, state = {
     pointer: 0,
     accumulator: 0,
-    remaining: instructions.length,
     visited: {},
     halt: false
 }) => !state.halt && state.pointer < instructions.length
-    ? executeBootloader(
-        instructions,
-        applyInstruction(instructions[state.pointer], state)
-    ) : state;
+    ? executeBootloader(instructions, applyInstruction(instructions[state.pointer], state)) 
+    : state;
 
 const isBootloaderFixed = ({ halt, accumulator }) => halt ? false : accumulator; 
 
@@ -33,18 +30,15 @@ const fixCorruptedBootloader = (instructions) =>
         state || !SWAPSIES[instruction]
             ? state
             : isBootloaderFixed(executeBootloader([
-            ...instructions.slice(0, i),
-            [SWAPSIES[instruction], param],
-            ...instructions.slice(i + 1)
-        ])), false);
+                ...instructions.slice(0, i),
+                [SWAPSIES[instruction], param],
+                ...instructions.slice(i + 1)
+            ])), false);
 
 export const main = async (inputPath = './input.txt') => {
     const instructions = parseBootloader(await readFile(inputPath, 'utf8'));
-    const bootloaderResult = executeBootloader(instructions);
-    console.log('Bootloader Result (part 1):', bootloaderResult.accumulator);
-
-    const fixedBootloaderResult = fixCorruptedBootloader(instructions);
-    console.log('Fixed Bootloader Result (part 2):', fixedBootloaderResult);
+    console.log('Bootloader Result (part 1):', executeBootloader(instructions).accumulator);
+    console.log('Fixed Bootloader Result (part 2):', fixCorruptedBootloader(instructions));
 }
 
 if (esMain(import.meta)) {

@@ -12,9 +12,10 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const prepLog = (message, appendSuffix = true) => `${LOG_PREFIX}${message}${appendSuffix ? LOG_SUFFIX : ''}`;
 
 const timeLog = async (timeLogString, func) => {
-    console.time(prepLog(`  ${timeLogString}`, false));
+    const label = prepLog(`  ${timeLogString}`, false);
+    console.time(label);
     const ret = await func();
-    console.timeEnd(prepLog(`  ${timeLogString}`, false));
+    console.timeEnd(label);
     console.log(LOG_SUFFIX);
     return ret;
 }

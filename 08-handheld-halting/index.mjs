@@ -26,21 +26,17 @@ const executeBootloader = (instructions, state = {
         applyInstruction(instructions[state.pointer], state)
     ) : state;
 
-const fixCorruptedBootloader = (instructions) =>
-    instructions.reduce((state, [instruction, param], i) => {
-        if (state || !SWAPSIES[instruction]) {
-            return state;
-        }
+const isBootloaderFixed = ({ halt, accumulator }) => halt ? false : accumulator; 
 
-        const { halt, accumulator } = executeBootloader([
+const fixCorruptedBootloader = (instructions) =>
+    instructions.reduce((state, [instruction, param], i) => 
+        state || !SWAPSIES[instruction]
+            ? state
+            : isBootloaderFixed(executeBootloader([
             ...instructions.slice(0, i),
             [SWAPSIES[instruction], param],
             ...instructions.slice(i + 1)
-        ]);
-
-        return halt ? false : accumulator;
-    }, false);
-
+        ])), false);
 
 export const main = async (inputPath = './input.txt') => {
     const instructions = parseBootloader(await readFile(inputPath, 'utf8'));

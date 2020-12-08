@@ -1,42 +1,33 @@
 import { readFile } from 'fs/promises';
 import esMain from '../00-helpers/es-main.mjs';
 
+const SWAPSIES = { nop: 'jmp', jmp: 'nop' };
+
 const parseBootloader = (file) => file.split('\n')
     .map((line) => line.split(' '))
     .map(([instruction, param]) => [instruction, Number(param)]);
 
-const applyInstruction = (instruction, param, { halt, accumulator, pointer }) => ({
-    halt,
+const applyInstruction = ([instruction, param], { halt, accumulator, pointer, visited }) => ({
+    halt: !!visited[pointer],
     accumulator: accumulator + (instruction === 'acc' ? param : 0),
-    pointer: pointer + (instruction === 'jmp' ? param : 1)
+    pointer: pointer + (instruction === 'jmp' ? param : 1),
+    visited: { ...visited, [pointer]: true }
 });
 
-const executeBootloader = (instructions) => {
-    const visited = {};
-    let state = {
-        pointer: 0,
-        accumulator: 0,
-        halt: false
-    };
+const executeBootloader = (instructions, state = {
+    pointer: 0,
+    accumulator: 0,
+    remaining: instructions.length,
+    visited: {},
+    halt: false
+}) => !state.halt && state.pointer < instructions.length
+    ? executeBootloader(
+        instructions,
+        applyInstruction(instructions[state.pointer], state)
+    ) : state;
 
-    while (true) {
-        state.halt = !!visited[state.pointer];
-        if (state.halt || state.pointer >= instructions.length) {
-            break;
-        }
-
-        visited[state.pointer] = true;
-        const [instruction, param] = instructions[state.pointer];
-        state = applyInstruction(instruction, param, state);
-    }
-
-    return state;
-}
-
-const fixCorruptedBootloader = (instructions) => {
-    const SWAPSIES = { nop: 'jmp', jmp: 'nop' };
-
-    return instructions.reduce((state, [instruction, param], i) => {
+const fixCorruptedBootloader = (instructions) =>
+    instructions.reduce((state, [instruction, param], i) => {
         if (state || !SWAPSIES[instruction]) {
             return state;
         }
@@ -48,8 +39,8 @@ const fixCorruptedBootloader = (instructions) => {
         ]);
 
         return halt ? false : accumulator;
-    }, false)
-}
+    }, false);
+
 
 export const main = async (inputPath = './input.txt') => {
     const instructions = parseBootloader(await readFile(inputPath, 'utf8'));

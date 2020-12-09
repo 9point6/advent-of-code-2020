@@ -2,9 +2,7 @@ import { readFile } from 'fs/promises';
 import esMain from '../00-helpers/es-main.mjs';
 
 const parseCipher = (file) => file.split('\n').map(Number);
-
 const sumSet = (set) => set.reduce((acc, val) => acc + val, 0);
-
 const containsSum = (set, sum) =>
     set.reduce(
         (acc, value) => acc || set.reduce(
@@ -15,16 +13,23 @@ const containsSum = (set, sum) =>
     );
 
 const validateCipher = (cipher, preambleLength = 25) => cipher
-    .map((value, i) => {
-        if (i < preambleLength) {
-            return { value, preamble: true };
-        }
+    .map((value, i) => ({
+        value,
+        valid: (i < preambleLength)
+            || containsSum(cipher.slice(i - preambleLength, i), value)
+    }))
 
-        return {
-            value,
-            valid: containsSum(cipher.slice(i - preambleLength, i), value)
-        };
-    })
+const buildSumResult = (set, newSum, sum) => ({
+    set,
+    found: newSum === sum,
+    skip: newSum < sum
+})
+
+const removeFromFront = ([_first, ...set], sum) => buildSumResult(set, sumSet(set), sum);
+const testRemovals = (set, sum) => set.reduce(
+    (acc) => (acc.found || acc.skip) ? acc : removeFromFront(acc.set, sum),
+    { set }
+);
 
 const findContiguousSum = (set, sum) => set
     .reduce((acc, value) => {
@@ -34,43 +39,13 @@ const findContiguousSum = (set, sum) => set
 
         const newSet = [...acc.set, value];
         const currentSum = sumSet(newSet);
-        if (currentSum === sum) {
-            return { set: newSet, found: true }
-        }
-
-        if (currentSum > sum) {
-
-            const shortSet = newSet.slice(1);
-            const shortSum = sumSet(shortSet);
-
-            return newSet.reduce((acc, item, i) => {
-                if (acc.found) {
-                    return acc;
-                }
-
-                const shortSet = acc.set.slice(1);
-                const shortSum = sumSet(shortSet);
-                if (shortSum < sum) {
-                    return acc;
-                }
-
-                return {
-                    set: shortSet,
-                    found: shortSum === sum
-                };
-            }, { set: newSet });
-        }
-
-        return { set: newSet };
+        return (currentSum > sum)
+            ? testRemovals(newSet, sum)
+            : buildSumResult(newSet, currentSum, sum);
     }, { set: [] });
 
-const findInvalid = (validatedCipher) => validatedCipher
-    .find((value) => !value.preamble && !value.valid);
-
-const findWeakness = (contiguousSum) => {
-    const sortedList = contiguousSum.set.sort((a, b) => a - b);
-    return sortedList[0] + sortedList[sortedList.length - 1];
-}
+const findInvalid = (validatedCipher) => validatedCipher.find((value) => !value.valid);
+const findWeakness = ({ set }) => Math.min.apply(null, set) + Math.max.apply(null, set);
 
 export const main = async (inputPath = './input.txt') => {
     const parsedCipher = parseCipher(await readFile(inputPath, 'utf8'));
@@ -78,7 +53,6 @@ export const main = async (inputPath = './input.txt') => {
     const invalidValue = findInvalid(validatedCipher).value;
     console.log('Invalid Value:', invalidValue);
     const contiguousSum = findContiguousSum(parsedCipher, invalidValue);
-    console.log('Contiguous Sum:', contiguousSum);
     console.log('Encryption Weakness:', findWeakness(contiguousSum));
 }
 

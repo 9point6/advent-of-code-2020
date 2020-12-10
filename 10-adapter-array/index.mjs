@@ -50,7 +50,7 @@ export const main = async (inputPath = './input.txt') => {
     console.log('Multiplied Differences (part 1):', multipliedDifferences);
 
     const combinations = countCombinations(adapters);
-    console.log('Combinations (part 2):', JSON.stringify(combinations))
+    console.log('Combinations (part 2):', combinations)
 }
 
 if (esMain(import.meta)) {

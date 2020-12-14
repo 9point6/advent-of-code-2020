@@ -1,35 +1,61 @@
 import { readFile } from 'fs/promises';
 import esMain from '../00-helpers/es-main.mjs';
 
+const DIRECTIONS = [
+    { dx: -1, dy: -1 },
+    { dx: -1, dy: 0 },
+    { dx: -1, dy: 1 },
+    { dx: 0, dy: -1 },
+    { dx: 0, dy: 1 },
+    { dx: 1, dy: -1 },
+    { dx: 1, dy: 0 },
+    { dx: 1, dy: 1 },
+]
+
 const parseSeatingLine = (line) => line.split('');
 const parseSeatingMap = (file) => file.split('\n')
     .filter((line) => line.length)
     .map(parseSeatingLine);
 
-const getAdjacentOccupied = (seatingMap, x, y, edgeCell = '.') =>
-    [
-        (seatingMap[y - 1] || [])[x - 1] || edgeCell,
-        (seatingMap[y - 1] || [])[x] || edgeCell,
-        (seatingMap[y - 1] || [])[x + 1] || edgeCell,
-        (seatingMap[y] || [])[x - 1] || edgeCell,
-        (seatingMap[y] || [])[x + 1] || edgeCell,
-        (seatingMap[y + 1] || [])[x - 1] || edgeCell,
-        (seatingMap[y + 1] || [])[x] || edgeCell,
-        (seatingMap[y + 1] || [])[x + 1] || edgeCell
-    ].filter((cell) => cell === '#')
+const immediatelyAdjacentStrategy = (seatingMap, x, y) =>
+    ({ dx, dy }) => (seatingMap[y + dy] || [])[x + dx];
+
+const lineOfSightStrategy = (seatingMap, x, y) =>
+    ({ dx, dy }) => {
+        const next = immediatelyAdjacentStrategy(seatingMap, x, y)({ dx, dy });
+        if (next !== '.') {
+            return next;
+        }
+
+        if (x < 0 || y < 0
+            || x >= seatingMap[0].length
+            || y >= seatingMap.length
+        ) {
+            return '.';
+        }
+
+        return lineOfSightStrategy(seatingMap, x + dx, y + dy)({ dx, dy });
+    };
+
+const getAdjacentOccupied = (strategy, seatingMap, x, y) => DIRECTIONS
+    .map(strategy(seatingMap, x, y))
+    .filter((cell) => cell === '#')
     .length;
 
-const adjacentEmpty = (seatingMap, x, y) => getAdjacentOccupied(seatingMap, x, y) === 0;
-const tooCrowded = (seatingMap, x, y) => getAdjacentOccupied(seatingMap, x, y) >= 4;
+const adjacentEmpty = (strategy, seatingMap, x, y) =>
+    getAdjacentOccupied(strategy, seatingMap, x, y) === 0;
 
-const step = (seatingMap) => seatingMap
+const tooCrowded = (strategy, crowdSize, seatingMap, x, y) =>
+    getAdjacentOccupied(strategy, seatingMap, x, y) >= crowdSize;
+
+const step = (strategy, crowdSize, seatingMap) => seatingMap
     .map((line, y) => line
         .map((cell, x) => {
-            if (cell === 'L' && adjacentEmpty(seatingMap, x, y)) {
+            if (cell === 'L' && adjacentEmpty(strategy, seatingMap, x, y)) {
                 return '#';
             }
 
-            if (cell === '#' && tooCrowded(seatingMap, x, y)) {
+            if (cell === '#' && tooCrowded(strategy, crowdSize, seatingMap, x, y)) {
                 return 'L';
             }
 
@@ -43,24 +69,11 @@ const hasMapChanged = (before, after) => !before
 
 const visualiseSeating = (seatingMap) => seatingMap.map((row) => row.join('')).join('\n')
 
-const runAutomation = (seatingMap) => {
-    const next = step(seatingMap);
+const runAutomation = (strategy, crowdSize, seatingMap) => {
+    const next = step(strategy, crowdSize, seatingMap);
     return hasMapChanged(seatingMap, next)
-        ? runAutomation(next)
+        ? runAutomation(strategy, crowdSize, next)
         : seatingMap;
-
-    // let count = 0;
-    // let prev = seatingMap
-    // let next = step(prev);
-    // console.log(visualiseSeating(prev) + '\n');
-    // while (hasMapChanged(prev, next)) {
-    //     console.log(visualiseSeating(next) + '\n');
-    //     prev = next;
-    //     next = step(prev);
-    //     count++;
-    // }
-
-    // return [next, count]
 }
 
 const countSeats = (seatingMap) => seatingMap
@@ -68,9 +81,10 @@ const countSeats = (seatingMap) => seatingMap
 
 export const main = async (inputPath = './input.txt') => {
     const seatingMap = parseSeatingMap(await readFile(inputPath, 'utf8'));
-    const result = runAutomation(seatingMap);
-    console.log(`Final map:\n${visualiseSeating(result)}`);
-    console.log('Seats:', countSeats(result));
+    const part1Result = runAutomation(immediatelyAdjacentStrategy, 4, seatingMap);
+    console.log('Seats (Part 1):', countSeats(part1Result));
+    const part2Result = runAutomation(lineOfSightStrategy, 5, seatingMap);
+    console.log('Seats (Part 2):', countSeats(part2Result));
 }
 
 if (esMain(import.meta)) {

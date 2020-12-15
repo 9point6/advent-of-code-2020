@@ -27,7 +27,8 @@ const findGoldenTicket = ({ timestamp, buses }) => buses
         !multiple
             ? { timestamp, multiple: id }
             : recurseMultiples(timestamp, multiple, id, minutes)
-        ), { timestamp: 0, multiple: 0 });
+        ), { timestamp: 0, multiple: 0 })
+        .timestamp;
 
 export const main = async (inputPath = './input.txt') => {
     const buses = parseBusIds(await readFile(inputPath, 'utf8'));

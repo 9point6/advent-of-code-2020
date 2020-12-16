@@ -19,7 +19,7 @@ const parseLine = (line) => {
 const parseProgram = (file) => file.split('\n').filter((a) => a).map(parseLine);
 const applyMask = (val, { zeroes, ones }) => ~((~val & ~ones ^ FLIP_MASK) & ~zeroes ^ FLIP_MASK)
 
-const runProgram = (program) => program
+const runV1Program = (program) => program
     .reduce(({ currentMask, memory }, [command, ...params]) => (
         command === 'mask'
             ? { memory, currentMask: params[0] }
@@ -29,16 +29,60 @@ const runProgram = (program) => program
             }}
     ), { memory: {}, currentMask: { zeroes: 0n, ones: 0n } });
 
+const applyMemoryMask = (val, { zeroes, ones }) => {
+    const output = [];
+    const state = { zeroes, ones, val };
+    let i = 36;
+
+    while (i) {
+        if (state.zeroes & 1n) {
+            output.push([state.val & 1n])
+        } else if (state.ones & 1n) {
+            output.push([1n])
+        } else {
+            output.push([0n, 1n])
+        }
+
+        state.zeroes >>= 1n;
+        state.ones >>= 1n;
+        state.val >>= 1n;
+        i--;
+    }
+
+    return output.reverse().reduce((addresses, digits) => [
+        ...digits.flatMap((digit) =>
+            addresses.map((address) => (address << 1n) + digit)
+        )
+    ], [0n]);
+};
+
+const runV2Program = (program) => program
+    .reduce(({ currentMask, memory }, [command, ...params]) => (
+        command === 'mask'
+            ? { memory, currentMask: params[0] }
+            : { currentMask, memory: {
+                ...applyMemoryMask(params[0], currentMask)
+                    .reduce((mem, memAddress) => {
+                        // return ({
+                        //     ...mem,
+                        //     [memAddress]: params[1]
+                        // }); // Immutability is not very performant here :(
+                        mem[memAddress] = params[1];
+                        return mem;
+                    }, memory)
+            }}
+    ), { memory: {}, currentMask: { zeroes: 0n, ones: 0n } });
+
 const sumMemory = (memory) => Object.values(memory).reduce((a, b) => a + b, 0n);
 
 export const main = async (inputPath = './input.txt') => {
     const program = parseProgram(await readFile(inputPath, 'utf8'));
-    console.log('program', program);
-    const { memory, currentMask } = runProgram(program);
-    console.log('mask', currentMask.zeroes.toString(2), currentMask.ones.toString(2))
+    const { memory, currentMask } = runV1Program(program);
     const memorySum = sumMemory(memory);
-    console.log('memory', memory);
     console.log('sum of memory (part 1):', memorySum);
+    const { memory: memory2 } = runV2Program(program);
+    const memorySum2 = sumMemory(memory2);
+    console.log('sum of memory (part 2):', memorySum2);
 }
 
 if (esMain(import.meta)) {
